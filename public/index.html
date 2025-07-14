@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Busca de Empresas</title>
+</head>
+<body>
+  <h1>Busca de Empresas com Google Places</h1>
+  <input id="local" placeholder="Local" />
+  <input id="segmento" placeholder="Segmento" />
+  <button onclick="buscar()">Buscar</button>
+  <pre id="resultado"></pre>
+  <script>
+    async function buscar() {
+      const local = document.getElementById('local').value;
+      const segmento = document.getElementById('segmento').value;
+      const termo = encodeURIComponent(`${segmento} em ${local}`);
+      const resp = await fetch(`/api/buscar?termo=${termo}`);
+      const dados = await resp.json();
+      document.getElementById('resultado').textContent = JSON.stringify(dados, null, 2);
+    }
+  </script>
+</body>
+</html>
