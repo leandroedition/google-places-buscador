@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Busca de Negócios com Google Places</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded shadow">
+    <h1 class="text-2xl font-bold mb-4">Busca de Negócios (Google Places)</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <input id="local" type="text" placeholder="Local (ex: Florianópolis)" class="border p-2 rounded">
+      <input id="segmento" type="text" placeholder="Segmento (ex: restaurante)" class="border p-2 rounded">
+    </div>
+    <button id="buscar" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Buscar</button>
+
+    <table class="table-auto w-full mt-6 text-left">
+      <thead>
+        <tr class="bg-gray-200">
+          <th class="px-4 py-2">Nome</th>
+          <th class="px-4 py-2">Endereço</th>
+          <th class="px-4 py-2">Telefone</th>
+          <th class="px-4 py-2">Site</th>
+        </tr>
+      </thead>
+      <tbody id="resultados"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const API_KEY = "AIzaSyC3HGTImsmFbVbUKzyWYbpyI6990uiYYbQ";
+
+    document.getElementById("buscar").addEventListener("click", async () => {
+      const local = document.getElementById("local").value.trim();
+      const segmento = document.getElementById("segmento").value.trim();
+      const tabela = document.getElementById("resultados");
+
+      if (!local || !segmento) {
+        tabela.innerHTML = "<tr><td colspan='4' class='text-red-600 px-4 py-2'>Preencha o local e o segmento.</td></tr>";
+        return;
+      }
+
+      tabela.innerHTML = "<tr><td colspan='4' class='px-4 py-2'>Buscando...</td></tr>";
+
+      try {
+        const query = encodeURIComponent(`${segmento} em ${local}`);
+        const searchUrl = `https://corsproxy.io/?https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${API_KEY}`;
+        const response = await fetch(searchUrl);
+        const data = await response.json();
+
+        if (!data.results || data.results.length === 0) {
+          tabela.innerHTML = "<tr><td colspan='4' class='px-4 py-2'>Nenhum resultado encontrado.</td></tr>";
+          return;
+        }
+
+        tabela.innerHTML = "";
+
+        for (const lugar of data.results) {
+          const nome = lugar.name || "-";
+          const endereco = lugar.formatted_address || "-";
+          let telefone = "-";
+          let website = "-";
+
+          if (lugar.place_id) {
+            const detailsUrl = `https://corsproxy.io/?https://maps.googleapis.com/maps/api/place/details/json?place_id=${lugar.place_id}&fields=name,formatted_phone_number,website&key=${API_KEY}`;
+            const detailsRes = await fetch(detailsUrl);
+            const detailsData = await detailsRes.json();
+            if (detailsData.result) {
+              telefone = detailsData.result.formatted_phone_number || "-";
+              website = detailsData.result.website || "-";
+            }
+          }
+
+          tabela.innerHTML += `
+            <tr>
+              <td class="border px-4 py-2">${nome}</td>
+              <td class="border px-4 py-2">${endereco}</td>
+              <td class="border px-4 py-2">${telefone}</td>
+              <td class="border px-4 py-2">
+                ${website !== '-' ? `<a href="${website}" class="text-blue-600 underline" target="_blank">Site</a>` : '-'}
+              </td>
+            </tr>
+          `;
+        }
+      } catch (err) {
+        console.error(err);
+        tabela.innerHTML = "<tr><td colspan='4' class='text-red-600 px-4 py-2'>Erro ao buscar dados.</td></tr>";
+      }
+    });
+  </script>
+</body>
+</html>
